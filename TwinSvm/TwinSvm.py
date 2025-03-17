@@ -1,10 +1,46 @@
 import numpy as np
 from sklearn.base import BaseEstimator, ClassifierMixin
-from sklearn.datasets import make_classification
+from sklearn.datasets import make_multilabel_classification
 from sklearn.model_selection import train_test_split
 import KernelMatrix as km
 import TsvmPlane1
 import TsvmPlane2
+
+
+class MultiLabelTwinSvm(BaseEstimator, ClassifierMixin):
+    def __init__(self, c1=1, c2=1, Epsi1=0.01, Epsi2=0.01, kernel='linear', degree=2, gamma=1.0, r=0):
+        self.c1 = c1
+        self.c2 = c2
+        self.Epsi1 = Epsi1
+        self.Epsi2 = Epsi2
+        self.kernel = kernel
+        self.degree = degree
+        self.gamma = gamma
+        self.r = r
+        self.models = []
+
+    def fit(self, X, Y):
+        n_labels = Y.shape[1]
+        for i in range(n_labels):
+            y = Y[:, i]
+            model = TwinSvm(c1=self.c1, c2=self.c2, Epsi1=self.Epsi1, Epsi2=self.Epsi2,
+                            kernel=self.kernel, degree=self.degree, gamma=self.gamma, r=self.r)
+            model.fit(X, y)
+            self.models.append(model)
+        return self
+
+    def predict(self, X):
+        predictions = []
+        for model in self.models:
+            pred = model.predict(X)
+            predictions.append(pred)
+        return np.array(predictions).T
+
+    def score(self, X, Y, sample_weight=None):
+        from sklearn.metrics import hamming_loss
+        Y_pred = self.predict(X)
+        return 1 - hamming_loss(Y, Y_pred)
+
 
 
 class TwinSvm(BaseEstimator, ClassifierMixin):
@@ -130,45 +166,30 @@ class TwinSvm(BaseEstimator, ClassifierMixin):
         sv2 = self.B[mask1]
         return np.vstack((sv1, sv2))
 
-
 def test():
-    # 生成模拟数据
-    X, y = make_classification(n_samples=1000, n_features=10, n_informative=5, n_redundant=0, random_state=42)
+    # 生成多标签模拟数据
+    X, Y = make_multilabel_classification(n_samples=100, n_features=10, n_classes=3, n_labels=2, random_state=42)
 
     # 划分训练集和测试集
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+    X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size=0.2, random_state=42)
 
-    # 调整参数名以匹配 TwinSvm 类的 __init__ 方法
-    params1 = {'c1': 1, 'c2': 1, 'Epsi1': 0.1, 'Epsi2': 0.1, 'kernel': 'linear', 'gamma': 1.0}
-    params2 = {'c1': 2, 'c2': 1, 'Epsi1': 0.01, 'Epsi2': 0.01, 'kernel': 'rbf', 'gamma': 1.0}
-    params3 = {'c1': 1, 'c2': 1, 'Epsi1': 0.01, 'Epsi2': 0.01, 'kernel': 'rbf', 'gamma': 0.3}
-
-    # 创建 TwinSvm 分类器实例
-    clf1 = TwinSvm()
-    clf2 = TwinSvm()
-    clf3 = TwinSvm()
-
-    # 传入参数
-    clf1.set_params(**params1)
-    clf2.set_params(**params2)
-    clf3.set_params(**params3)
+    # 创建 MultiLabelTwinSvm 分类器实例
+    clf = MultiLabelTwinSvm()
 
     # 训练分类器
-    clf1.fit(X_train, y_train)
-    clf2.fit(X_train, y_train)
-    clf3.fit(X_train, y_train)
+    clf.fit(X_train, Y_train)
 
     # 预测测试集
-    y_pred1 = clf1.predict(X_test)
-    y_pred2 = clf2.predict(X_test)
-    y_pred3 = clf3.predict(X_test)
+    Y_pred = clf.predict(X_test)
 
     # 计算准确率
-    accuracy1 = clf1.score(X_test, y_test)
-    accuracy2 = clf2.score(X_test, y_test)
-    accuracy3 = clf3.score(X_test, y_test)
+    accuracy = clf.score(X_test, Y_test)
 
-    print(f"Accuracy with params1: {accuracy1:.2f}")
-    print(f"Accuracy with params2: {accuracy2:.2f}")
-    print(f"Accuracy with params3: {accuracy3:.2f}")
+    print(f"Accuracy: {accuracy:.2f}")
+
+
+if __name__ == '__main__':
+    test()
+
+
     
