@@ -7,41 +7,6 @@ import TsvmPlane1
 import TsvmPlane2
 
 
-class MultiLabelTwinSvm(BaseEstimator, ClassifierMixin):
-    def __init__(self, c1=1, c2=1, Epsi1=0.01, Epsi2=0.01, kernel='linear', degree=2, gamma=1.0, r=0):
-        self.c1 = c1
-        self.c2 = c2
-        self.Epsi1 = Epsi1
-        self.Epsi2 = Epsi2
-        self.kernel = kernel
-        self.degree = degree
-        self.gamma = gamma
-        self.r = r
-        self.models = []
-
-    def fit(self, X, Y):
-        n_labels = Y.shape[1]
-        for i in range(n_labels):
-            y = Y[:, i]
-            model = TwinSvm(c1=self.c1, c2=self.c2, Epsi1=self.Epsi1, Epsi2=self.Epsi2,
-                            kernel=self.kernel, degree=self.degree, gamma=self.gamma, r=self.r)
-            model.fit(X, y)
-            self.models.append(model)
-        return self
-
-    def predict(self, X):
-        predictions = []
-        for model in self.models:
-            pred = model.predict(X)
-            predictions.append(pred)
-        return np.array(predictions).T
-
-    def score(self, X, Y, sample_weight=None):
-        from sklearn.metrics import hamming_loss
-        Y_pred = self.predict(X)
-        return 1 - hamming_loss(Y, Y_pred)
-
-
 
 class TwinSvm(BaseEstimator, ClassifierMixin):
     def __init__(self,c1=1,c2=1,Epsi1=0.01,Epsi2=0.01,kernel='linear',degree=2,gamma=1.0,r=0):
@@ -128,19 +93,33 @@ class TwinSvm(BaseEstimator, ClassifierMixin):
 
         # 根据距离选择类别，距离小的类别为预测结果
         predictions = (distance1 < distance2).astype(int)
+
+        # 返回的是一维向量
         return predictions
 
-    def score(self, X, y, sample_weight=None):
+    def get_score(self, X):
         """
-        计算分类器的准确率。
-        :param X: 特征矩阵
-        :param y: 真实标签向量
-        :param sample_weight: 样本权重
-        :return: 准确率
+        返回输入数据的分数
+        取-distance作为最终分数
         """
-        from sklearn.metrics import accuracy_score
-        y_pred = self.predict(X)
-        return accuracy_score(y, y_pred, sample_weight=sample_weight)
+        # 首先将 A 和 B 合并成 C
+        C = np.vstack((self.A, self.B))
+        if self.kernel == 'linear':
+            K_x_C = km.linear_kernel(X, C.T)
+        elif self.kernel == 'poly':
+            K_x_C = km.poly_kernel(X, C.T, self.gamma, self.r, self.degree)
+        elif self.kernel == 'rbf':
+            K_x_C = km.rbf_kernel(X, C.T, self.gamma)
+        else:
+            K_x_C = km.linear_kernel(X, C.T)
+
+        # 计算到平面1的绝对值距离
+        distance1 = np.abs(K_x_C @ self.u1 + self.b1)
+
+        # 返回一维向量，距离的负值作为分数
+        return -distance1
+
+
     def set_params(self, **params):
         """
         设置估计器的参数。
@@ -153,6 +132,7 @@ class TwinSvm(BaseEstimator, ClassifierMixin):
             else:
                 raise ValueError(f"Invalid parameter {param} for estimator {self.__class__.__name__}.")
         return self
+    
     def get_support_vectors(self):
         """
         获取支持向量。
@@ -166,30 +146,9 @@ class TwinSvm(BaseEstimator, ClassifierMixin):
         sv2 = self.B[mask1]
         return np.vstack((sv1, sv2))
 
-def test():
-    # 生成多标签模拟数据
-    X, Y = make_multilabel_classification(n_samples=100, n_features=10, n_classes=3, n_labels=2, random_state=42)
-
-    # 划分训练集和测试集
-    X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size=0.2, random_state=42)
-
-    # 创建 MultiLabelTwinSvm 分类器实例
-    clf = MultiLabelTwinSvm()
-
-    # 训练分类器
-    clf.fit(X_train, Y_train)
-
-    # 预测测试集
-    Y_pred = clf.predict(X_test)
-
-    # 计算准确率
-    accuracy = clf.score(X_test, Y_test)
-
-    print(f"Accuracy: {accuracy:.2f}")
 
 
-if __name__ == '__main__':
-    test()
+
 
 
     

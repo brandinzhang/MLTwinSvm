@@ -2,22 +2,26 @@ import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.datasets import make_multilabel_classification
 from sklearn.preprocessing import StandardScaler
-from TwinSvm import MultiLabelTwinSvm
+from MLTSVM_ova import ovaMLTSVM
+from MLTSVM_k import kMLTSVM
 
 # 生成具有两个特征的多标签分类数据集，总共有 3 个类别且每个样本平均有 2 个标签
 X, Y = make_multilabel_classification(n_samples=100, n_features=2, n_classes=3, n_labels=2,
                                       random_state=1)
 
+
+"""
 # 加点噪声
 rng = np.random.RandomState(2)
 X += 0.2 * rng.uniform(size=X.shape)
+"""
 
 # 数据标准化
 scaler = StandardScaler()
 X = scaler.fit_transform(X)
 
 # 创建并训练 MultiLabelTwinSvm 模型
-model = MultiLabelTwinSvm(kernel='rbf', gamma=0.7)
+model = ovaMLTSVM(kernel='rbf', gamma=0.7)
 model.fit(X, Y)
 
 # 创建网格点
