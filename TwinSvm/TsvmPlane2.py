@@ -26,4 +26,4 @@ def solve(R,S,c2,Epsi2):
     # return u2,b2
     u2 = z[:len(z)-1].flatten()
     b2 = z[len(z)-1]
-    return u2,b2
+    return u2,b2,beta

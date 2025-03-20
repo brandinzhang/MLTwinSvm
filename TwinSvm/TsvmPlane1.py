@@ -26,4 +26,5 @@ def solve(R,S,c1,Epsi1):
     # return u1,b1,u是二维列向量
     u1 = z[:len(z)-1].flatten()
     b1 = z[len(z)-1]
-    return u1,b1
+
+    return u1,b1,alpha

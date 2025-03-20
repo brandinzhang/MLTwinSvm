@@ -1,14 +1,12 @@
 import numpy as np
 from sklearn.base import BaseEstimator, ClassifierMixin
-from sklearn.datasets import make_multilabel_classification
-from sklearn.model_selection import train_test_split
 import KernelMatrix as km
 import TsvmPlane1
-import TsvmPlane2
+
 
 
 class TwinSvm(BaseEstimator, ClassifierMixin):
-    def __init__(self,c1=1,c2=1,Epsi1=0.01,Epsi2=0.01,kernel='linear',degree=2,gamma=1.0,r=0):
+    def __init__(self,c1=1,Epsi1=0.01,kernel='linear',degree=2,gamma=1.0,r=0):
         """
         初始化 TwinSvm 分类器的参数。
         :param c1: 第一个平面的惩罚参数
@@ -21,13 +19,9 @@ class TwinSvm(BaseEstimator, ClassifierMixin):
         :param r: 多项式核的偏移量
         """
         self.c1 = c1
-        self.c2 = c2
         self.Epsi1 = Epsi1
-        self.Epsi2 = Epsi2
         self.u1 = None
         self.b1 = None
-        self.u2 = None
-        self.b2 = None
         self.kernel = kernel
         self.degree = degree
         self.gamma = gamma
@@ -64,7 +58,6 @@ class TwinSvm(BaseEstimator, ClassifierMixin):
         S = np.c_[K1,e1]
         R = np.c_[K2,e2]
         self.u1,self.b1,self.alpha = TsvmPlane1.solve(R,S,self.c1,self.Epsi1)
-        self.u2,self.b2,self.beta  = TsvmPlane2.solve(R,S,self.c2,self.Epsi2)
         self.A = A
         self.B = B
         return self
@@ -88,10 +81,10 @@ class TwinSvm(BaseEstimator, ClassifierMixin):
 
         # 计算到两个平面的绝对值距离
         distance1 = np.abs(K_x_C @ self.u1 + self.b1)
-        distance2 = np.abs(K_x_C @ self.u2 + self.b2)
+
 
         # 根据距离选择类别，距离小的类别为预测结果
-        predictions = (distance1 < distance2).astype(int)
+        predictions = (distance1 <= 1).astype(int)
 
         # 返回的是一维向量
         return predictions
@@ -139,15 +132,42 @@ class TwinSvm(BaseEstimator, ClassifierMixin):
         """
         mask1 = self.alpha > 1e-5
         mask1 = mask1.flatten()
-        mask2 = self.beta > 1e-5
-        mask2 = mask2.flatten()
-        sv1 = self.A[mask2]
         sv2 = self.B[mask1]
-        return np.vstack((sv1, sv2))
+        return sv2
 
 
+class kMLTSVM(BaseEstimator, ClassifierMixin):
+    def __init__(self, c1=1, Epsi1=0.01,kernel='linear', degree=2, gamma=1.0, r=0):
+        self.c1 = c1
+        self.Epsi1 = Epsi1
+        self.kernel = kernel
+        self.degree = degree
+        self.gamma = gamma
+        self.r = r
+        self.models = []
 
+    def fit(self, X, Y):
+        n_labels = Y.shape[1]
+        for i in range(n_labels):
+            y = Y[:, i]
+            model = TwinSvm(c1=self.c1, Epsi1=self.Epsi1, 
+                            kernel=self.kernel, degree=self.degree, gamma=self.gamma, r=self.r)
+            model.fit(X, y)
+            self.models.append(model)
+        return self
 
+    def predict(self, X):
+        predictions = []
+        for model in self.models:
+            # 或得对当下标签预测的一维向量
+            pred = model.predict(X)
+            predictions.append(pred)
+        return np.array(predictions).T
 
-
-    
+    def score(self, X):
+        scores = []
+        for model in self.models:
+            # 或得对当下标签预测的一维向量
+            pred = model.get_score(X)
+            scores.append(pred)
+        return np.array(scores).T
