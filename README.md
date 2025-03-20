@@ -50,3 +50,14 @@ test
 ├─ 📄testhh.md
 └─ 📄多标签学习用到的笔记.md
 ```
+
+
+TwinSvm
+    get_score:
+    predict:
+MLTSVM_k:
+    predict:
+    score:
+MLTSVM_ova:
+    predict:
+    score:

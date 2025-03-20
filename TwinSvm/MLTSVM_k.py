@@ -1,14 +1,12 @@
 import numpy as np
 from sklearn.base import BaseEstimator, ClassifierMixin
-from sklearn.datasets import make_multilabel_classification
-from sklearn.model_selection import train_test_split
 import KernelMatrix as km
 import TsvmPlane1
 
 
 
 class TwinSvm(BaseEstimator, ClassifierMixin):
-    def __init__(self,c1=1,c2=1,Epsi1=0.01,Epsi2=0.01,kernel='linear',degree=2,gamma=1.0,r=0):
+    def __init__(self,c1=1,Epsi1=0.01,kernel='linear',degree=2,gamma=1.0,r=0):
         """
         初始化 TwinSvm 分类器的参数。
         :param c1: 第一个平面的惩罚参数
@@ -21,13 +19,9 @@ class TwinSvm(BaseEstimator, ClassifierMixin):
         :param r: 多项式核的偏移量
         """
         self.c1 = c1
-        self.c2 = c2
         self.Epsi1 = Epsi1
-        self.Epsi2 = Epsi2
         self.u1 = None
         self.b1 = None
-        self.u2 = None
-        self.b2 = None
         self.kernel = kernel
         self.degree = degree
         self.gamma = gamma
@@ -143,11 +137,9 @@ class TwinSvm(BaseEstimator, ClassifierMixin):
 
 
 class kMLTSVM(BaseEstimator, ClassifierMixin):
-    def __init__(self, c1=1, c2=1, Epsi1=0.01, Epsi2=0.01, kernel='linear', degree=2, gamma=1.0, r=0):
+    def __init__(self, c1=1, Epsi1=0.01,kernel='linear', degree=2, gamma=1.0, r=0):
         self.c1 = c1
-        self.c2 = c2
         self.Epsi1 = Epsi1
-        self.Epsi2 = Epsi2
         self.kernel = kernel
         self.degree = degree
         self.gamma = gamma
@@ -158,7 +150,7 @@ class kMLTSVM(BaseEstimator, ClassifierMixin):
         n_labels = Y.shape[1]
         for i in range(n_labels):
             y = Y[:, i]
-            model = TwinSvm(c1=self.c1, c2=self.c2, Epsi1=self.Epsi1, Epsi2=self.Epsi2,
+            model = TwinSvm(c1=self.c1, Epsi1=self.Epsi1, 
                             kernel=self.kernel, degree=self.degree, gamma=self.gamma, r=self.r)
             model.fit(X, y)
             self.models.append(model)

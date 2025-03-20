@@ -21,7 +21,7 @@ scaler = StandardScaler()
 X = scaler.fit_transform(X)
 
 # 创建并训练 MultiLabelTwinSvm 模型
-model = ovaMLTSVM(kernel='rbf', gamma=0.7)
+model = kMLTSVM(kernel='rbf', gamma=0.7)
 model.fit(X, Y)
 
 # 创建网格点
