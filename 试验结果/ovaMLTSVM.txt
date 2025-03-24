@@ -1,0 +1,30 @@
+总进度:   0%|                                                                         | 0/4 [00:00<?, ?it/s, 正在处理: emotions]
+=== emotions 最终结果 ===                                                                                                       
+最佳参数: {'c': np.float64(0.1), 'gamma': np.float64(0.3)}                                                                                                                   
+Hamming Loss: 0.2434
+Ranking Loss: 0.2027
+One-Error: 0.3267  
+Coverage: 3.0941  
+总进度:  25%|████████████████▊                                                  | 1/4 [07:45<23:17, 465.96s/it, 正在处理: birds]                               0
+=== birds 最终结果 ===
+最佳参数: {'c': np.float64(0.3), 'gamma': np.float64(0.1)}
+Hamming Loss: 0.0430
+Ranking Loss: 0.1604
+One-Error: 0.7678
+Coverage: 8.6802
+总进度:  50%|█████████████████████████████████▌                                 | 2/4 [29:39<32:09, 964.78s/it, 正在处理: yeast]
+=== yeast 最终结果 ===                                                                                                                                                       
+最佳参数: {'c': np.float64(0.1), 'gamma': np.float64(0.9)}                                                                                                                   
+Hamming Loss: 0.2120
+Ranking Loss: 0.1936
+One-Error: 0.2519
+Coverage: 7.7077
+总进度:  75%|████████████████████████████████████████████████                | 3/4 [1:31:40<37:03, 2223.00s/it, 正在处理: flags]
+=== flags 最终结果 ===                                                                                                                                                       
+最佳参数: {'c': np.float64(0.1), 'gamma': np.float64(0.5)}                                                                                                                   
+Hamming Loss: 0.2527
+Ranking Loss: 0.2074
+One-Error: 0.1692
+Coverage: 4.6923
+总进度: 100%|████████████████████████████████████████████████████████████████| 4/4 [1:35:38<00:00, 1434.74s/it, 正在处理: flags]
+
