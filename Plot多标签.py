@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 from sklearn.datasets import make_multilabel_classification
 from sklearn.preprocessing import StandardScaler
 from twsvmlib import MLTSVM_ova as OVA
-from twsvmlib import MLTSVM_k as K
+
 
 # 生成具有两个特征的多标签分类数据集，总共有 3 个类别且每个样本平均有 2 个标签
 X, Y = make_multilabel_classification(n_samples=100, n_features=2, n_classes=3, n_labels=2,

@@ -1,11 +1,9 @@
 import numpy as np
 import Read
 from sklearn.preprocessing import StandardScaler
-from sklearn.model_selection import GridSearchCV, KFold, ParameterGrid
-from sklearn.metrics import make_scorer
+from sklearn.model_selection import KFold
 from tqdm.auto import tqdm
 from twsvmlib import MLTSVM_ova as OVA
-from twsvmlib import MLTSVM_k as K
 from twsvmlib import metrics as M
 
 

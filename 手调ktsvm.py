@@ -1,9 +1,8 @@
-import numpy as np
 import Read
 from sklearn.preprocessing import StandardScaler
 from twsvmlib import MLTSVM_k as K
 from twsvmlib import metrics as M
-import time
+
 
 datasets = ['flags','birds','emotions','yeast',]
 paras = [

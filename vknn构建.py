@@ -1,14 +1,18 @@
+"""
+本尝试并不成功
+"""
+
 import numpy as np
 from sklearn.base import BaseEstimator, ClassifierMixin
-from sklearn.datasets import make_multilabel_classification
-from sklearn.model_selection import train_test_split
 from twsvmlib import KernelMatrix as km
 from twsvmlib import TsvmPlane1
 from twsvmlib import TsvmPlane2
 from sklearn.neighbors import NearestNeighbors
-import time
 import Read
 from twsvmlib import metrics as M
+
+
+
 
 class TwinSvm(BaseEstimator, ClassifierMixin):
     def __init__(self,c1=1,c2=1,Epsi1=0.01,Epsi2=0.01,kernel='linear',degree=2,gamma=1.0,r=0,v=None):
@@ -101,7 +105,7 @@ class TwinSvm(BaseEstimator, ClassifierMixin):
         return predictions
     def get_delta(self):
         return self.delta
-        
+    
 
     def get_score(self, X):
         """

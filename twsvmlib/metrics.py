@@ -30,8 +30,8 @@ def coverage(y_true, y_score):
         coverage_sum += max_rank + 1
         valid_samples += 1
     # 避免除以0
-    print(f"wrong samples: {wrong_samples}")
-    return coverage_sum / valid_samples if valid_samples > 0 else 0.0
+    # print(f"wrong samples: {wrong_samples}")
+    return coverage_sum / num_samples 
 
 def ranking_loss(y_true, y_score):
     num_samples = y_true.shape[0]

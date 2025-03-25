@@ -2,14 +2,13 @@ import numpy as np
 import Read
 import pandas as pd
 from sklearn.preprocessing import StandardScaler
-from twsvmlib import MLTSVM_ova as O
+from twsvmlib import MLTSVM_p as O
 from twsvmlib import metrics as M
 import time
 
 datasets = ['flags']
 paras = [
-    {'c1':0.1,'gamma':0.5,'kernel':'rbf'}, 
-
+    {'c1':0.1,'gamma':0.5,'kernel':'rbf'},
 ]
 for dataset, para in zip(datasets, paras):
     X, y = Read.read_train(dataset)
@@ -18,14 +17,15 @@ for dataset, para in zip(datasets, paras):
     X = scaler.fit_transform(X)
     X_test = scaler.transform(X_test)
 
-    model = O.ovaMLTSVM(**para)
+    model = O.pMLTSVM(**para)
     
+    t1 = time.time()
     model.fit(X, y)
+    t2 = time.time()
     y_pred = model.predict(X_test)
+    y_score= model.score(X_test)
 
     
-
-
 
     """
     acu = np.mean(y_pred == y_test, axis=0)
@@ -41,11 +41,9 @@ for dataset, para in zip(datasets, paras):
     """
     
     
-    t1 = time.time()
-    t2 = time.time()
-    y_pred = model.predict(X_test)
-    y_score = model.score(X_test)
 
+
+    
     print(f"ktsvm在数据集: {dataset}训练用时: {t2-t1:.2f}s")
     metrics = {
             "Hamming Loss": M.hamming_loss(y_test, y_pred),
@@ -55,6 +53,9 @@ for dataset, para in zip(datasets, paras):
     }
     for metric, value in metrics.items():
         print(f"{metric}: {value:.4f}")
+    
+    
+
     
 
         

@@ -1,9 +1,13 @@
 import numpy as np
 from sklearn.base import BaseEstimator, ClassifierMixin
+import numpy as np
+from sklearn.base import BaseEstimator, ClassifierMixin
 from . import KernelMatrix as km
 from . import TsvmPlane1
 from . import TsvmPlane2
 
+def sigmod(x):
+    return 1/(1+np.exp(-x))
 
 class TwinSvm(BaseEstimator, ClassifierMixin):
     def __init__(self,c1=1,c2=1,Epsi1=0.01,Epsi2=0.01,kernel='linear',degree=2,gamma=1.0,r=0):
@@ -76,17 +80,17 @@ class TwinSvm(BaseEstimator, ClassifierMixin):
         # 首先将 A 和 B 合并成 C
         C = np.vstack((self.A, self.B))
         if self.kernel == 'linear':
-            K_x_C = km.linear_kernel(X, C.T)
+            xc = km.linear_kernel(X, C.T)
         elif self.kernel == 'poly':
-            K_x_C = km.poly_kernel(X, C.T, self.gamma, self.r, self.degree)
+            xc = km.poly_kernel(X, C.T, self.gamma, self.r, self.degree)
         elif self.kernel == 'rbf':
-            K_x_C = km.rbf_kernel(X, C.T, self.gamma)
+            xc = km.rbf_kernel(X, C.T, self.gamma)
         else:
-            K_x_C = km.linear_kernel(X, C.T)
+            xc = km.linear_kernel(X, C.T)
 
         # 计算到两个平面的绝对值距离
-        distance1 = np.abs(K_x_C @ self.u1 + self.b1)
-        distance2 = np.abs(K_x_C @ self.u2 + self.b2)
+        distance1 = np.abs(xc @ self.u1 + self.b1)
+        distance2 = np.abs(xc @ self.u2 + self.b2)
         self.delta = distance2
         # 根据距离选择类别，距离小的类别为预测结果
         predictions = (distance1 < distance2).astype(int)
@@ -105,19 +109,49 @@ class TwinSvm(BaseEstimator, ClassifierMixin):
         # 首先将 A 和 B 合并成 C
         C = np.vstack((self.A, self.B))
         if self.kernel == 'linear':
-            K_x_C = km.linear_kernel(X, C.T)
+            xc = km.linear_kernel(X, C.T)
         elif self.kernel == 'poly':
-            K_x_C = km.poly_kernel(X, C.T, self.gamma, self.r, self.degree)
+            xc = km.poly_kernel(X, C.T, self.gamma, self.r, self.degree)
+            
         elif self.kernel == 'rbf':
-            K_x_C = km.rbf_kernel(X, C.T, self.gamma)
+            # X: t*n C: m*n u1,u2:(m,)
+            xc = km.rbf_kernel(X, C.T, self.gamma) #t*m
+            cc = km.rbf_kernel(C,C.T,self.gamma)  #m*m
+            u1xc = km.rbf_kernel(X,C.T,self.gamma)@self.u1 #(t,)
+            u2xc = km.rbf_kernel(X,C.T,self.gamma)@self.u2 #(t,)
+            u1ccu2 = self.u1@cc@self.u2  #1*1
+            u1ccu1 = self.u1@cc@self.u1  #1*1
+            u2ccu2 = self.u2@cc@self.u2  #1*1
         else:
-            K_x_C = km.linear_kernel(X, C.T)
+            xc = km.linear_kernel(X, C.T)
 
-        # 计算到平面1的绝对值距离
-        distance1 = np.abs(K_x_C @ self.u1 + self.b1)
+        d1 = np.abs(xc @ self.u1 + self.b1)   #(t,)
+        d2 = np.abs(xc @ self.u2 + self.b2)   #(t,)
 
-        # 返回一维向量，距离的负值作为分数
-        return -distance1
+        temp1 = (u1xc+self.b1)/np.sqrt(u1ccu1)  #(t,)
+        temp2 = (u2xc+self.b2)/np.sqrt(u2ccu2)  #(t,)
+        temp3 = 2*u1ccu2/(u1ccu1*u2ccu2)        #标量
+        
+        num1 = np.abs(temp1+temp2)  #(t,)
+        den1 = np.sqrt(2+temp3)     #标量
+        D_pos = num1/den1           #(t,)
+
+        num2 = np.abs(temp1-temp2)  #(t,)
+        den2 = np.sqrt(2-temp3)     #标量
+        D_neg = num2/den2           #(t,)
+
+        f = np.zeros(d1.shape)       #(t,)
+        D = np.maximum(D_pos,D_neg)  #(t,)
+        d = np.minimum(D_pos,D_neg)  #(t,)
+        temp = d**2/(D+1e-6)         #(t,)
+
+        idx1 = d1<d2
+        idx2 = d1>d2
+        f[idx1] = temp[idx1]
+        f[idx2] = -temp[idx2]
+
+        return sigmod(f)        #(t,)
+
 
 
     def set_params(self, **params):
@@ -138,17 +172,56 @@ class TwinSvm(BaseEstimator, ClassifierMixin):
         获取支持向量。
         :return: 支持向量矩阵
         """
-        mask1 = self.alpha > 1e-5
-        mask1 = mask1.flatten()
-        mask2 = self.beta > 1e-5
-        mask2 = mask2.flatten()
-        sv1 = self.A[mask2]
-        sv2 = self.B[mask1]
+        idx1 = self.alpha > 1e-5
+        idx1 = idx1.flatten()
+        idx2 = self.beta > 1e-5
+        idx2 = idx2.flatten()
+        sv1 = self.A[idx2]
+        sv2 = self.B[idx1]
         return np.vstack((sv1, sv2))
 
+class pMLTSVM(BaseEstimator, ClassifierMixin):
+    def __init__(self, c1=1, c2=1, Epsi1=0.01, Epsi2=0.01, kernel='linear', degree=2, gamma=1.0, r=0):
+        self.c1 = c1
+        self.c2 = c2
+        self.Epsi1 = Epsi1
+        self.Epsi2 = Epsi2
+        self.kernel = kernel
+        self.degree = degree
+        self.gamma = gamma
+        self.r = r
+        self.models = []
 
+    def fit(self, X, Y):
+        n_labels = Y.shape[1]
+        for i in range(n_labels):
+            y = Y[:, i]
+            model = TwinSvm(c1=self.c1, c2=self.c2, Epsi1=self.Epsi1, Epsi2=self.Epsi2,
+                            kernel=self.kernel, degree=self.degree, gamma=self.gamma, r=self.r)
+            model.fit(X, y)
+            self.models.append(model)
+        return self
 
+    def predict(self, X):
+        predictions = []
+        for model in self.models:
+            # 或得对当下标签预测的一维向量
+            pred = model.predict(X)
+            predictions.append(pred)
+        return np.array(predictions).T
 
-
-
+    def score(self, X):
+        scores = []
+        for model in self.models:
+            # 或得对当下标签预测的一维向量
+            pred = model.get_score(X)
+            scores.append(pred)
+        return np.array(scores).T
     
+    def get_delta_k(self):
+        deltas = []
+        for model in self.models:
+            # 或得对当下标签预测的一维向量
+            delta = model.get_delta()
+            deltas.append(delta)
+        return np.array(deltas)
